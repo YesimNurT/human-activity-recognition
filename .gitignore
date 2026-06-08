@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Data & model artifacts (keep out of git)
+*.pth
+*.pt
+*.ckpt
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.csv
+*.zip
+data/
+datasets/
+checkpoints/
+models/
+outputs/
