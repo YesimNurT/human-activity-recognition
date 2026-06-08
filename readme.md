@@ -2,6 +2,7 @@
 
 > Six-class activity recognition from smartphone accelerometer/gyroscope features, with classical ML, deep learning, and an interactive Streamlit app.
 
+![Accuracy](https://img.shields.io/badge/SVM%20Test%20Acc-93.8%25-blue?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikitlearn&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white)
