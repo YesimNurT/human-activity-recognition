@@ -2,7 +2,7 @@
 
 > A 1-D CNN classifies six daily activities from raw smartphone accelerometer and gyroscope signals.
 > The model is exported to **ONNX Runtime**, **INT8-quantized** for edge devices, and sends its predictions
-> to an **AWS-hosted monitoring API**. All results are **leak-free**: every model is scored on people it never saw during training.
+> to an **AWS-hosted monitoring API** (deployed; see [live deployment](#live-deployment)). All results are **leak-free**: every model is scored on people it never saw during training.
 
 ![CV](https://img.shields.io/badge/Subject--wise%20CV-91.5%25%20%C2%B1%204.4-blue?style=flat-square)
 ![Test](https://img.shields.io/badge/Unseen--subject%20test-93.8%25-blue?style=flat-square)
@@ -131,6 +131,26 @@ python src/edge_client.py --n 300 --rate 20          # stream predictions to the
 The Lambda stores each prediction in DynamoDB and publishes `Confidence`, `LatencyMs`, per-activity
 `Predictions` and (in replay mode) `Correct` metrics to CloudWatch. A dashboard and a low-confidence alarm
 serve as a simple drift signal. Remove everything with `sam delete`.
+
+### Live deployment
+
+The stack was deployed to `eu-central-1`, and the edge client streamed 1,500 predictions from the INT8
+model on the 9 unseen test subjects:
+
+| Monitored metric | Value |
+|---|---|
+| Predictions stored (DynamoDB) | 1,500 |
+| Live replay accuracy (`Correct`) | 94.2%, consistent with the 93.8% offline test accuracy |
+| Average confidence | 0.96 |
+| End-to-end client inference time | 0.5 ms per window, including Python overhead |
+| Low-confidence alarm | OK |
+
+<p align="center"><img src="assets/cloudwatch-dashboard.png" width="850" alt="CloudWatch dashboard"/></p>
+
+The dip in the accuracy panel comes from one replay segment dominated by sitting/standing transitions,
+the model's weakest class pair. This is the kind of drop the dashboard is meant to surface.
+
+<p align="center"><img src="assets/dynamodb-items.png" width="550" alt="DynamoDB prediction records"/></p>
 
 ## Dataset
 
