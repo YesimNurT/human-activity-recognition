@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Edge HAR monitoring API - API Gateway (API key) + Lambda + DynamoDB + CloudWatch
+
+Parameters:
+  LowConfidenceThreshold:
+    Type: Number
+    Default: 0.7
+    Description: Alarm when average prediction confidence over 5 minutes drops below this
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 10
+    MemorySize: 256
+    Architectures: [arm64]
+
+Resources:
+  PredictionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: device_id, AttributeType: S }
+        - { AttributeName: ts, AttributeType: N }
+      KeySchema:
+        - { AttributeName: device_id, KeyType: HASH }
+        - { AttributeName: ts, KeyType: RANGE }
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  HarApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Throttle: { RateLimit: 20, BurstLimit: 40 }
+          Quota: { Limit: 100000, Period: MONTH }
+
+  PredictionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: lambda_function.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PredictionsTable
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref PredictionsTable }
+        - CloudWatchPutMetricPolicy: {}
+      Events:
+        PostPredictions:
+          Type: Api
+          Properties: { RestApiId: !Ref HarApi, Path: /predictions, Method: POST }
+        GetPredictions:
+          Type: Api
+          Properties: { RestApiId: !Ref HarApi, Path: /predictions, Method: GET }
+
+  LowConfidenceAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Average edge prediction confidence dropped (possible data drift)
+      Namespace: EdgeHAR
+      MetricName: Confidence
+      Dimensions:
+        - { Name: ModelVersion, Value: har-cnn-int8-v1 }
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: !Ref LowConfidenceThreshold
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+
+  MonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub "${AWS::StackName}-edge-har"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {"type": "metric", "x": 0, "y": 0, "width": 12, "height": 6, "properties": {
+              "title": "Predictions per activity", "region": "${AWS::Region}", "stat": "Sum", "period": 60,
+              "view": "timeSeries", "stacked": true,
+              "metrics": [
+                ["EdgeHAR", "Predictions", "Activity", "WALKING"], ["...", "WALKING_UPSTAIRS"],
+                ["...", "WALKING_DOWNSTAIRS"], ["...", "SITTING"], ["...", "STANDING"], ["...", "LAYING"]
+              ]}},
+            {"type": "metric", "x": 12, "y": 0, "width": 12, "height": 6, "properties": {
+              "title": "Average confidence / replay accuracy", "region": "${AWS::Region}", "stat": "Average",
+              "period": 60, "yAxis": {"left": {"min": 0, "max": 1}},
+              "metrics": [
+                ["EdgeHAR", "Confidence", "ModelVersion", "har-cnn-int8-v1"],
+                [".", "Correct", ".", "."]
+              ]}},
+            {"type": "metric", "x": 0, "y": 6, "width": 12, "height": 6, "properties": {
+              "title": "On-device inference latency (ms)", "region": "${AWS::Region}", "period": 60,
+              "metrics": [
+                ["EdgeHAR", "LatencyMs", "ModelVersion", "har-cnn-int8-v1", {"stat": "Average"}],
+                ["...", {"stat": "p99"}]
+              ]}},
+            {"type": "alarm", "x": 12, "y": 6, "width": 12, "height": 6, "properties": {
+              "title": "Low-confidence alarm", "alarms": ["${LowConfidenceAlarm.Arn}"]}}
+          ]
+        }
+
+Outputs:
+  PredictionsUrl:
+    Description: Value for HAR_API_URL
+    Value: !Sub "https://${HarApi}.execute-api.${AWS::Region}.amazonaws.com/prod/predictions"
+  ApiKeyId:
+    Description: Retrieve the key value with 'aws apigateway get-api-key --api-key <id> --include-value'
+    Value: !Ref HarApiApiKey
+  DashboardUrl:
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${AWS::StackName}-edge-har"
+  TableName:
+    Value: !Ref PredictionsTable

@@ -1,0 +1,24 @@
+{
+  "cv_accuracy_mean": 0.9146507314085845,
+  "cv_accuracy_std": 0.04416040367144593,
+  "cv_macro_f1_mean": 0.9175269336471118,
+  "cv_macro_f1_std": 0.04449615730433785,
+  "cv_fold_accuracy": [
+    0.9156,
+    0.8544,
+    0.9467,
+    0.8797,
+    0.9768
+  ],
+  "cv_best_epochs": [
+    8,
+    11,
+    6,
+    3,
+    3
+  ],
+  "final_epochs": 6,
+  "test_accuracy": 0.9379029521547336,
+  "test_macro_f1": 0.9395929489423563,
+  "n_params": 106886
+}
