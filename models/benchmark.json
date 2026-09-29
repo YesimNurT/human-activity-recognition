@@ -1,0 +1,19 @@
+{
+  "fp32": {
+    "size_kb": 417.4,
+    "weights_kb": 412.8,
+    "latency_ms": 0.29,
+    "test_accuracy": 0.9379,
+    "test_macro_f1": 0.9396
+  },
+  "int8": {
+    "size_kb": 114.1,
+    "weights_kb": 103.2,
+    "latency_ms": 0.091,
+    "test_accuracy": 0.9369,
+    "test_macro_f1": 0.9387
+  },
+  "size_reduction_x": 3.66,
+  "weight_reduction_x": 4.0,
+  "prediction_agreement": 0.9976
+}

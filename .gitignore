@@ -30,5 +30,18 @@ env/
 data/
 datasets/
 checkpoints/
-models/
+models/*
+!models/*.onnx
+!models/norm.npz
+!models/*.json
 outputs/
+
+# Trained artifacts (models/ is ignored above); notebook checkpoints
+notebooks/*.pth
+
+# AWS SAM build output
+aws/.aws-sam/
+samconfig.toml
+
+# Local tooling
+.claude/

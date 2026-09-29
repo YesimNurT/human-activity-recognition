@@ -1,0 +1,17 @@
+# Core ML
+numpy>=1.26
+pandas>=2.0
+scikit-learn>=1.4
+torch>=2.2
+# Edge export / inference
+onnx>=1.16
+onnxruntime>=1.18
+# Edge client + app
+requests>=2.31
+python-dotenv>=1.0
+streamlit>=1.35
+matplotlib>=3.8
+seaborn>=0.13
+# Dev
+pytest>=8.0
+jupyter
